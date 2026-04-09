@@ -1,0 +1,24 @@
+{
+  "name": "clipflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A desktop productivity tool built with Electron, Vue 3, TypeScript and Vite.",
+  "main": "out/main/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "vue-tsc --noEmit && electron-vite build",
+    "preview": "electron-vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "electron": "^35.1.5",
+    "electron-vite": "^3.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2",
+    "vue-tsc": "^2.2.8"
+  }
+}
