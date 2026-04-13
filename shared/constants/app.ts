@@ -1,4 +1,6 @@
 export const APP_NAME = 'ClipFlow'
+export const CLIPBOARD_HISTORY_LIMIT = 50
+export const CLIPBOARD_POLLING_INTERVAL = 1000
 
 export const WINDOW_CONFIG = {
   width: 1280,
@@ -15,11 +17,11 @@ export const MODULE_TABS = [
 
 export const TRANSFORM_ACTIONS = [
   { key: 'trim', label: 'Trim' },
-  { key: 'single-line', label: '多行转单行' },
-  { key: 'split-lines', label: '按行拆分' },
-  { key: 'split-comma', label: '按逗号拆分' },
-  { key: 'upper-case', label: '转大写' },
-  { key: 'lower-case', label: '转小写' },
-  { key: 'json-format', label: 'JSON 格式化' },
-  { key: 'json-minify', label: 'JSON 压缩' }
+  { key: 'single-line', label: 'To Single Line' },
+  { key: 'split-lines', label: 'Split By Line' },
+  { key: 'split-comma', label: 'Split By Comma' },
+  { key: 'upper-case', label: 'Uppercase' },
+  { key: 'lower-case', label: 'Lowercase' },
+  { key: 'json-format', label: 'Format JSON' },
+  { key: 'json-minify', label: 'Minify JSON' }
 ] as const

@@ -9,9 +9,8 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "types": ["node", "electron"],
-    "baseUrl": ".",
     "paths": {
-      "@shared/*": ["shared/*"]
+      "@shared/*": ["./shared/*"]
     }
   },
   "include": ["electron.vite.config.ts", "main/**/*.ts", "preload/**/*.ts", "shared/**/*.ts"]

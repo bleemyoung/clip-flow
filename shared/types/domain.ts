@@ -6,6 +6,12 @@ export interface ClipboardItem {
   pinned: boolean
 }
 
+export interface ClipboardHistorySnapshot {
+  items: ClipboardItem[]
+  limit: number
+  pollingInterval: number
+}
+
 export interface SnippetItem {
   id: string
   title: string

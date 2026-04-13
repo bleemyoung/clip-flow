@@ -46,8 +46,8 @@ const activeComponent = computed(() => {
       </nav>
 
       <div class="sidebar__footer">
-        <p>Phase 1-2 shell is ready.</p>
-        <small>Next: clipboard watcher and local persistence.</small>
+        <p>阶段 3 已进入真实数据联调。</p>
+        <small>当前重点：剪贴板历史与本地持久化。</small>
       </div>
     </aside>
 

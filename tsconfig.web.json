@@ -10,10 +10,9 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "types": ["vite/client"],
-    "baseUrl": ".",
     "paths": {
-      "@renderer/*": ["renderer/src/*"],
-      "@shared/*": ["shared/*"]
+      "@renderer/*": ["./renderer/src/*"],
+      "@shared/*": ["./shared/*"]
     }
   },
   "include": ["renderer/src/**/*.ts", "renderer/src/**/*.tsx", "renderer/src/**/*.vue", "shared/**/*.ts"]
