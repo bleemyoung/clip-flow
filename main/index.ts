@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, clipboard, ipcMain } from 'electron'
 import { join } from 'node:path'
 import { CLIPBOARD_HISTORY_LIMIT, CLIPBOARD_POLLING_INTERVAL, APP_NAME, WINDOW_CONFIG } from '@shared/constants/app'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
@@ -62,6 +62,9 @@ function createWindow(): void {
 
 function registerClipboardIpc(): void {
   ipcMain.handle(IPC_CHANNELS.clipboardGetHistory, () => getClipboardHistoryService().getSnapshot())
+  ipcMain.handle(IPC_CHANNELS.textCopy, (_event, text: string) => {
+    clipboard.writeText(text)
+  })
   ipcMain.handle(IPC_CHANNELS.clipboardCopyItem, async (_event, id: string) => {
     await getClipboardHistoryService().copyItem(id)
   })

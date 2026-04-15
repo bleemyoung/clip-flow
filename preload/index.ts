@@ -12,6 +12,9 @@ const api: AppShellApi = {
   getClipboardHistory() {
     return ipcRenderer.invoke(IPC_CHANNELS.clipboardGetHistory)
   },
+  copyText(text) {
+    return ipcRenderer.invoke(IPC_CHANNELS.textCopy, text)
+  },
   copyClipboardItem(id) {
     return ipcRenderer.invoke(IPC_CHANNELS.clipboardCopyItem, id)
   },

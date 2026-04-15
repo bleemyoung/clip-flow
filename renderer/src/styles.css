@@ -152,6 +152,12 @@ button:disabled {
   gap: 12px;
 }
 
+.transform-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .section-card {
   padding: 20px;
   border-radius: 20px;
@@ -247,7 +253,8 @@ button:disabled {
 }
 
 .empty-state,
-.error-text {
+.error-text,
+.transform-feedback {
   padding: 14px 0;
 }
 
@@ -256,6 +263,15 @@ button:disabled {
 }
 
 .error-text {
+  color: #bb2f2f;
+}
+
+.transform-feedback {
+  margin: 0;
+  color: #2f6b2f;
+}
+
+.transform-feedback--error {
   color: #bb2f2f;
 }
 

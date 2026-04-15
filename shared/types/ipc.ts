@@ -10,6 +10,7 @@ export type ClipboardHistoryListener = (snapshot: ClipboardHistorySnapshot) => v
 export interface AppShellApi {
   getAppMeta: () => AppMeta
   getClipboardHistory: () => Promise<ClipboardHistorySnapshot>
+  copyText: (text: string) => Promise<void>
   copyClipboardItem: (id: string) => Promise<void>
   togglePinClipboardItem: (id: string) => Promise<ClipboardItem[]>
   deleteClipboardItem: (id: string) => Promise<ClipboardItem[]>
