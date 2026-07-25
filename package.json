@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "vue-tsc --noEmit && electron-vite build",
-    "preview": "electron-vite preview"
+    "preview": "electron-vite preview",
+    "setup:electron": "node node_modules/electron/install.js"
   },
   "dependencies": {
     "vue": "^3.5.13"

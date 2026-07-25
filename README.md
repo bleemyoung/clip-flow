@@ -49,6 +49,12 @@ npm install
 npm run dev
 ```
 
+macOS 上如果 Electron 二进制下载不完整，先确认已执行 `npm install`，再执行：
+
+```bash
+npm run setup:electron
+```
+
 ## 快速构建
 
 ```bash
@@ -59,3 +65,4 @@ npm run build
 
 - 当前仍建议使用 `Node 22.x LTS`
 - 运行期存在 Windows 本地缓存目录权限告警，但目前不阻塞开发和构建
+- macOS 本地开发依赖安装已配置 Electron 镜像；若出现 `Electron uninstall` 或 `Electron failed to install correctly`，请参考 [项目使用](./docs/项目使用.md)
