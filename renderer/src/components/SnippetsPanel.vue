@@ -156,7 +156,7 @@ onUnmounted(() => {
         <h3>Snippets</h3>
         <p>保存、查找并复制可复用的文本片段。</p>
       </div>
-      <button class="primary-button" :disabled="isSaving" type="button" @click="openCreateForm">
+      <button class="primary-button" :disabled="isSaving || isActionPending" type="button" @click="openCreateForm">
         New Snippet
       </button>
     </div>
@@ -216,13 +216,13 @@ onUnmounted(() => {
           </div>
           <pre class="snippet-item__content">{{ item.content }}</pre>
           <div class="record-item__actions">
-            <button class="ghost-button" :disabled="isActionPending" type="button" @click="handleCopy(item)">
+            <button class="ghost-button" :disabled="isActionPending || isSaving" type="button" @click="handleCopy(item)">
               Copy
             </button>
-            <button class="ghost-button" :disabled="isActionPending" type="button" @click="openEditForm(item)">
+            <button class="ghost-button" :disabled="isActionPending || isSaving" type="button" @click="openEditForm(item)">
               Edit
             </button>
-            <button class="ghost-button" :disabled="isActionPending" type="button" @click="handleDelete(item)">
+            <button class="ghost-button" :disabled="isActionPending || isSaving" type="button" @click="handleDelete(item)">
               Delete
             </button>
           </div>

@@ -1,6 +1,6 @@
 import { app, clipboard } from 'electron'
 import { randomUUID } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { SnippetDraft, SnippetItem } from '@shared/types/domain'
 
@@ -36,9 +36,14 @@ function isSnippetItem(value: unknown): value is SnippetItem {
   const item = value as SnippetItem
 
   return Boolean(
-    item.id &&
+    typeof item.id === 'string' &&
+      item.id &&
+      typeof item.createdAt === 'string' &&
       item.createdAt &&
+      typeof item.updatedAt === 'string' &&
       item.updatedAt &&
+      parseTimestamp(item.createdAt) > 0 &&
+      parseTimestamp(item.updatedAt) > 0 &&
       typeof item.title === 'string' &&
       item.title.trim() &&
       typeof item.content === 'string' &&
@@ -56,6 +61,7 @@ export class SnippetService {
   private readonly filePath = join(app.getPath('userData'), SNIPPETS_FILE_NAME)
   private items: SnippetItem[] = []
   private latestTimestamp = 0
+  private mutationQueue: Promise<void> = Promise.resolve()
 
   async initialize(): Promise<void> {
     this.items = await this.loadItems()
@@ -71,51 +77,53 @@ export class SnippetService {
 
   async createSnippet(draft: SnippetDraft): Promise<SnippetItem[]> {
     validateDraft(draft)
-    const now = this.nextTimestamp()
 
-    this.items = sortItems([
-      ...this.items,
-      {
-        id: randomUUID(),
-        title: draft.title,
-        content: draft.content,
-        createdAt: now,
-        updatedAt: now
-      }
-    ])
-    await this.persistItems()
+    return this.queueMutation(() => {
+      const now = this.nextTimestamp()
 
-    return this.getItems()
+      return sortItems([
+        ...this.items,
+        {
+          id: randomUUID(),
+          title: draft.title,
+          content: draft.content,
+          createdAt: now,
+          updatedAt: now
+        }
+      ])
+    })
   }
 
   async updateSnippet(id: string, draft: SnippetDraft): Promise<SnippetItem[]> {
     validateDraft(draft)
-    const target = this.items.find((item) => item.id === id)
+    return this.queueMutation(() => {
+      if (!this.items.some((item) => item.id === id)) {
+        return null
+      }
 
-    if (!target) {
-      return this.getItems()
-    }
+      const updatedAt = this.nextTimestamp()
 
-    target.title = draft.title
-    target.content = draft.content
-    target.updatedAt = this.nextTimestamp()
-    this.items = sortItems(this.items)
-    await this.persistItems()
-
-    return this.getItems()
+      return sortItems(
+        this.items.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                title: draft.title,
+                content: draft.content,
+                updatedAt
+              }
+            : item
+        )
+      )
+    })
   }
 
   async deleteSnippet(id: string): Promise<SnippetItem[]> {
-    const nextItems = this.items.filter((item) => item.id !== id)
+    return this.queueMutation(() => {
+      const nextItems = this.items.filter((item) => item.id !== id)
 
-    if (nextItems.length === this.items.length) {
-      return this.getItems()
-    }
-
-    this.items = nextItems
-    await this.persistItems()
-
-    return this.getItems()
+      return nextItems.length === this.items.length ? null : nextItems
+    })
   }
 
   async copySnippet(id: string): Promise<void> {
@@ -137,7 +145,11 @@ export class SnippetService {
         throw new Error('Snippet data must be an array.')
       }
 
-      return sortItems(parsed.filter(isSnippetItem))
+      if (!parsed.every(isSnippetItem)) {
+        throw new Error('Snippet data contains an invalid record.')
+      }
+
+      return sortItems(parsed)
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         console.error('Failed to load snippets.', error)
@@ -147,14 +159,38 @@ export class SnippetService {
     }
   }
 
-  private async persistItems(): Promise<void> {
+  private async persistItems(items: SnippetItem[]): Promise<void> {
     await mkdir(dirname(this.filePath), { recursive: true })
-    await writeFile(this.filePath, JSON.stringify(this.items, null, 2), 'utf8')
+    const temporaryFilePath = `${this.filePath}.tmp`
+
+    await writeFile(temporaryFilePath, JSON.stringify(items, null, 2), 'utf8')
+    await rename(temporaryFilePath, this.filePath)
   }
 
   private nextTimestamp(): string {
     this.latestTimestamp = Math.max(Date.now(), this.latestTimestamp + 1)
 
     return formatTimestamp(new Date(this.latestTimestamp))
+  }
+
+  private async queueMutation(operation: () => SnippetItem[] | null): Promise<SnippetItem[]> {
+    const mutation = this.mutationQueue.then(async () => {
+      const nextItems = operation()
+
+      if (!nextItems) {
+        return
+      }
+
+      await this.persistItems(nextItems)
+      this.items = nextItems
+    })
+
+    this.mutationQueue = mutation.then(
+      () => undefined,
+      () => undefined
+    )
+    await mutation
+
+    return this.getItems()
   }
 }

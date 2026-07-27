@@ -70,7 +70,7 @@ function createWindow(): void {
   })
 }
 
-function registerClipboardIpc(): void {
+function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.clipboardGetHistory, () => getClipboardHistoryService().getSnapshot())
   ipcMain.handle(IPC_CHANNELS.textCopy, (_event, text: string) => {
     clipboard.writeText(text)
@@ -110,7 +110,7 @@ app.whenReady().then(async () => {
   })
 
   await Promise.all([clipboardHistoryService.initialize(), snippetService.initialize()])
-  registerClipboardIpc()
+  registerIpcHandlers()
   createWindow()
 
   app.on('activate', () => {
