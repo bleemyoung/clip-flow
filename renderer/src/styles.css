@@ -257,8 +257,29 @@ button:disabled {
   resize: vertical;
 }
 
+.editor--snippet {
+  min-height: 160px;
+}
+
 .text-input {
   padding: 12px 14px;
+}
+
+.snippet-form,
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.snippet-form {
+  gap: 16px;
+}
+
+.form-field > span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #30405d;
 }
 
 .empty-state,

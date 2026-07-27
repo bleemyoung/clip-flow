@@ -27,6 +27,21 @@ const api: AppShellApi = {
   clearNormalClipboardItems() {
     return ipcRenderer.invoke(IPC_CHANNELS.clipboardClearNormal)
   },
+  getSnippets() {
+    return ipcRenderer.invoke(IPC_CHANNELS.snippetGetAll)
+  },
+  createSnippet(draft) {
+    return ipcRenderer.invoke(IPC_CHANNELS.snippetCreate, draft)
+  },
+  updateSnippet(id, draft) {
+    return ipcRenderer.invoke(IPC_CHANNELS.snippetUpdate, id, draft)
+  },
+  deleteSnippet(id) {
+    return ipcRenderer.invoke(IPC_CHANNELS.snippetDelete, id)
+  },
+  copySnippet(id) {
+    return ipcRenderer.invoke(IPC_CHANNELS.snippetCopy, id)
+  },
   onClipboardHistoryChanged(listener) {
     const wrappedListener = (_event: unknown, snapshot: Parameters<typeof listener>[0]) => {
       listener(snapshot)

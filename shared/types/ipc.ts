@@ -1,4 +1,4 @@
-import type { ClipboardHistorySnapshot, ClipboardItem } from './domain'
+import type { ClipboardHistorySnapshot, ClipboardItem, SnippetDraft, SnippetItem } from './domain'
 
 export interface AppMeta {
   name: string
@@ -16,4 +16,9 @@ export interface AppShellApi {
   deleteClipboardItem: (id: string) => Promise<ClipboardItem[]>
   clearNormalClipboardItems: () => Promise<ClipboardItem[]>
   onClipboardHistoryChanged: (listener: ClipboardHistoryListener) => () => void
+  getSnippets: () => Promise<SnippetItem[]>
+  createSnippet: (draft: SnippetDraft) => Promise<SnippetItem[]>
+  updateSnippet: (id: string, draft: SnippetDraft) => Promise<SnippetItem[]>
+  deleteSnippet: (id: string) => Promise<SnippetItem[]>
+  copySnippet: (id: string) => Promise<void>
 }

@@ -3,9 +3,11 @@ import { join } from 'node:path'
 import { CLIPBOARD_HISTORY_LIMIT, CLIPBOARD_POLLING_INTERVAL, APP_NAME, WINDOW_CONFIG } from '@shared/constants/app'
 import { IPC_CHANNELS } from '@shared/constants/ipc'
 import { ClipboardHistoryService } from './clipboard-history'
+import { SnippetService } from './snippet-service'
 
 let mainWindow: BrowserWindow | null = null
 let clipboardHistoryService: ClipboardHistoryService | null = null
+let snippetService: SnippetService | null = null
 const isDev = Boolean(process.env['ELECTRON_RENDERER_URL'])
 
 function getClipboardHistoryService(): ClipboardHistoryService {
@@ -14,6 +16,14 @@ function getClipboardHistoryService(): ClipboardHistoryService {
   }
 
   return clipboardHistoryService
+}
+
+function getSnippetService(): SnippetService {
+  if (!snippetService) {
+    throw new Error('Snippet service is not ready.')
+  }
+
+  return snippetService
 }
 
 function createWindow(): void {
@@ -77,15 +87,29 @@ function registerClipboardIpc(): void {
   ipcMain.handle(IPC_CHANNELS.clipboardClearNormal, () =>
     getClipboardHistoryService().clearNormalItems()
   )
+  ipcMain.handle(IPC_CHANNELS.snippetGetAll, () => getSnippetService().getItems())
+  ipcMain.handle(IPC_CHANNELS.snippetCreate, (_event, draft) =>
+    getSnippetService().createSnippet(draft)
+  )
+  ipcMain.handle(IPC_CHANNELS.snippetUpdate, (_event, id: string, draft) =>
+    getSnippetService().updateSnippet(id, draft)
+  )
+  ipcMain.handle(IPC_CHANNELS.snippetDelete, (_event, id: string) =>
+    getSnippetService().deleteSnippet(id)
+  )
+  ipcMain.handle(IPC_CHANNELS.snippetCopy, async (_event, id: string) => {
+    await getSnippetService().copySnippet(id)
+  })
 }
 
 app.whenReady().then(async () => {
   clipboardHistoryService = new ClipboardHistoryService()
+  snippetService = new SnippetService()
   clipboardHistoryService.setOnChange((snapshot) => {
     mainWindow?.webContents.send(IPC_CHANNELS.clipboardHistoryChanged, snapshot)
   })
 
-  await clipboardHistoryService.initialize()
+  await Promise.all([clipboardHistoryService.initialize(), snippetService.initialize()])
   registerClipboardIpc()
   createWindow()
 

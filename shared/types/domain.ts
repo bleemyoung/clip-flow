@@ -20,6 +20,11 @@ export interface SnippetItem {
   updatedAt: string
 }
 
+export interface SnippetDraft {
+  title: string
+  content: string
+}
+
 export type TransformActionKey =
   | 'trim'
   | 'single-line'

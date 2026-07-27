@@ -15,3 +15,17 @@
 - 对于范围判断，优先把当前 MVP 必需的兼容性验证放入当前 spec；明显超出当前目标的高级能力或分发能力应拆到后续 spec。
 - 写入前如果已经有足够上下文，直接综合现有对话和代码库事实；不要为了形式感重复追问。
 - 写入后读回关键文件，确认语言、范围和结构符合用户最新要求。
+
+## Agent skills
+
+### Issue tracker
+
+Spec 存放在 `specs/`；实施 ticket 使用 `.scratch/<feature>/issues/` 下的本地 Markdown 文件。详见 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+使用默认的本地 triage 标签词汇。详见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+本仓库是单上下文项目；工程工作前应读取根 `CONTEXT.md` 和相关的 `docs/adr/` 决策记录。详见 `docs/agents/domain.md`。
