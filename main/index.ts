@@ -100,6 +100,18 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.snippetCopy, async (_event, id: string) => {
     await getSnippetService().copySnippet(id)
   })
+  ipcMain.handle(IPC_CHANNELS.snippetUpload, async (_event, id: string) => {
+    const service = getSnippetService()
+    try {
+      return { ok: true, items: await service.uploadSnippet(id) }
+    } catch (error) {
+      return {
+        ok: false,
+        items: service.getItems(),
+        message: error instanceof Error && error.message ? error.message : '上云失败，请手动重试'
+      }
+    }
+  })
 }
 
 app.whenReady().then(async () => {

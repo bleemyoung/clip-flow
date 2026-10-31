@@ -42,6 +42,9 @@ const api: AppShellApi = {
   copySnippet(id) {
     return ipcRenderer.invoke(IPC_CHANNELS.snippetCopy, id)
   },
+  uploadSnippet(id) {
+    return ipcRenderer.invoke(IPC_CHANNELS.snippetUpload, id)
+  },
   onClipboardHistoryChanged(listener) {
     const wrappedListener = (_event: unknown, snapshot: Parameters<typeof listener>[0]) => {
       listener(snapshot)

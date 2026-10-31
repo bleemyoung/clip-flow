@@ -7,6 +7,10 @@ export interface AppMeta {
 
 export type ClipboardHistoryListener = (snapshot: ClipboardHistorySnapshot) => void
 
+export type UploadSnippetResult =
+  | { ok: true; items: SnippetItem[] }
+  | { ok: false; items: SnippetItem[]; message: string }
+
 export interface AppShellApi {
   getAppMeta: () => AppMeta
   getClipboardHistory: () => Promise<ClipboardHistorySnapshot>
@@ -21,4 +25,5 @@ export interface AppShellApi {
   updateSnippet: (id: string, draft: SnippetDraft) => Promise<SnippetItem[]>
   deleteSnippet: (id: string) => Promise<SnippetItem[]>
   copySnippet: (id: string) => Promise<void>
+  uploadSnippet: (id: string) => Promise<UploadSnippetResult>
 }

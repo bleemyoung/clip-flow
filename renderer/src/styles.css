@@ -209,6 +209,24 @@ button:disabled {
   gap: 8px;
 }
 
+.snippet-item__cloud-status {
+  display: block;
+  margin-bottom: 10px;
+  color: #4b5d70;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.snippet-item__upload-feedback {
+  margin: 10px 0 0;
+  color: #2f6b2f;
+  font-size: 13px;
+}
+
+.snippet-item__upload-feedback--error {
+  color: #bb2f2f;
+}
+
 .ghost-button,
 .primary-button,
 .action-button {

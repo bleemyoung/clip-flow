@@ -32,11 +32,13 @@ describe('preload Snippet bridge', () => {
     await api.updateSnippet('snippet-1', draft)
     await api.deleteSnippet('snippet-1')
     await api.copySnippet('snippet-1')
+    await api.uploadSnippet('snippet-1')
 
     expect(electronMock.invoke).toHaveBeenNthCalledWith(1, IPC_CHANNELS.snippetGetAll)
     expect(electronMock.invoke).toHaveBeenNthCalledWith(2, IPC_CHANNELS.snippetCreate, draft)
     expect(electronMock.invoke).toHaveBeenNthCalledWith(3, IPC_CHANNELS.snippetUpdate, 'snippet-1', draft)
     expect(electronMock.invoke).toHaveBeenNthCalledWith(4, IPC_CHANNELS.snippetDelete, 'snippet-1')
     expect(electronMock.invoke).toHaveBeenNthCalledWith(5, IPC_CHANNELS.snippetCopy, 'snippet-1')
+    expect(electronMock.invoke).toHaveBeenNthCalledWith(6, IPC_CHANNELS.snippetUpload, 'snippet-1')
   })
 })

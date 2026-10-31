@@ -30,6 +30,18 @@ public class ApiErrorHandler {
         return badRequest(exception.getMessage(), Map.of());
     }
 
+    @ExceptionHandler(SnippetNotFoundException.class)
+    public ResponseEntity<ApiError> notFound(SnippetNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiError("NOT_FOUND", exception.getMessage(), Map.of(), Instant.now()));
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<ApiError> conflict(IdempotencyConflictException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiError("IDEMPOTENCY_CONFLICT", exception.getMessage(), Map.of(), Instant.now()));
+    }
+
     private ResponseEntity<ApiError> badRequest(String message, Map<String, String> fields) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiError("INVALID_REQUEST", message, fields, Instant.now()));

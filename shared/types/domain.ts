@@ -18,6 +18,20 @@ export interface SnippetItem {
   content: string
   createdAt: string
   updatedAt: string
+  cloud?: SnippetCloudLink
+  pendingCreate?: PendingSnippetCreate
+}
+
+export interface SnippetCloudLink {
+  remoteId: string
+  uploadedTitle: string
+  uploadedContent: string
+}
+
+export interface PendingSnippetCreate {
+  requestKey: string
+  title: string
+  content: string
 }
 
 export interface SnippetDraft {

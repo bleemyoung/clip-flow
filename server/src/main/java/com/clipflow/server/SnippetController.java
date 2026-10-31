@@ -9,8 +9,10 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -34,8 +36,16 @@ public class SnippetController {
                             {"code":"INVALID_REQUEST","message":"Invalid snippet",
                              "fields":{"title":"must not be blank"},"timestamp":"2026-10-29T15:00:00Z"}
                             """)))
-    public SnippetResponse create(@Valid @RequestBody CreateSnippetRequest request) {
-        return service.create(request);
+    public SnippetResponse create(@Valid @RequestBody CreateSnippetRequest request,
+            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey) {
+        return service.create(request, idempotencyKey);
+    }
+
+    @PostMapping("/{id}/update")
+    @Operation(summary = "Update a saved snippet")
+    public SnippetResponse update(@PathVariable String id,
+            @Valid @RequestBody CreateSnippetRequest request) {
+        return service.update(id, request);
     }
 
     @GetMapping

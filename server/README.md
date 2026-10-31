@@ -1,6 +1,6 @@
 # ClipFlow Snippets Java API
 
-此目录是独立的本地开发服务，不改变现有 Electron 离线 Snippets 数据源。当前只提供创建与查询；没有登录鉴权，端口仅绑定 `127.0.0.1`，不得直接暴露到局域网或公网。
+此目录是独立的本地开发服务，不改变 Electron 离线 Snippets 列表的数据源。除原有创建与查询外，04 增加了带请求标识的幂等创建及手动更新；没有登录鉴权，端口仅绑定 `127.0.0.1`，不得直接暴露到局域网或公网。
 
 ## 环境
 
@@ -57,7 +57,28 @@ curl -i -X POST http://127.0.0.1:8080/api/snippets \
 }
 ```
 
-ID 为 UUID，时间为 UTC ISO 8601。允许重复标题与内容。
+ID 为 UUID，时间为 UTC ISO 8601。允许重复标题与内容。不带 `Idempotency-Key` 时保持原 03 行为，每次 POST 都可能新建记录。
+
+Electron 首次上云会先在本地保存 UUID 请求标识及提交快照，再发送：
+
+```sh
+curl -i -X POST http://127.0.0.1:8080/api/snippets \
+  -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: 00d797ff-1a57-4e22-a2e2-4d30d8e87296' \
+  -d '{"title":"Greeting","content":"Hello\nWorld"}'
+```
+
+用相同 key 和内容重试返回原 `201` 响应；同一 key 携带不同内容返回 `409 IDEMPOTENCY_CONFLICT`。不同 key 可以创建标题和正文相同的独立记录。Flyway V2 的 `snippet_upload_attempts` 表持久保存 key、内容和原创建响应；重启 Java 后仍有效。
+
+### 手动更新
+
+```sh
+curl -i -X POST http://127.0.0.1:8080/api/snippets/<后端UUID>/update \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Greeting","content":"Updated text"}'
+```
+
+返回 `200` 和同一后端记录。目标不存在返回 `404 NOT_FOUND`；重复提交相同标题与正文不刷新业务 `updatedAt`。桌面端仅在用户点击“更新到云端”时调用此接口，本地编辑和保存不会自动上传。
 
 ### 列表与搜索
 

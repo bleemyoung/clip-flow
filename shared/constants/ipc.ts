@@ -10,5 +10,6 @@ export const IPC_CHANNELS = {
   snippetUpdate: 'snippet:update',
   snippetDelete: 'snippet:delete',
   snippetCopy: 'snippet:copy',
+  snippetUpload: 'snippet:upload',
   textCopy: 'text:copy'
 } as const

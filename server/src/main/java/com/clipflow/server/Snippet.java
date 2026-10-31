@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Entity
@@ -42,4 +43,15 @@ public class Snippet {
     public String getContent() { return content; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+
+    public void update(String title, String content) {
+        if (this.title.equals(title) && this.content.equals(content)) {
+            return;
+        }
+
+        this.title = title;
+        this.content = content;
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        this.updatedAt = now.isAfter(updatedAt) ? now : updatedAt.plus(1, ChronoUnit.MICROS);
+    }
 }

@@ -11,12 +11,22 @@ const initialSnippet = {
   updatedAt: '2026-07-02 09:00:00'
 }
 
+const linkedSnippet = {
+  ...initialSnippet,
+  cloud: {
+    remoteId: 'remote-1',
+    uploadedTitle: initialSnippet.title,
+    uploadedContent: initialSnippet.content
+  }
+}
+
 const clipflowMock = {
   getSnippets: vi.fn(),
   createSnippet: vi.fn(),
   updateSnippet: vi.fn(),
   deleteSnippet: vi.fn(),
-  copySnippet: vi.fn()
+  copySnippet: vi.fn(),
+  uploadSnippet: vi.fn()
 }
 
 function findButton(wrapper: ReturnType<typeof mount>, label: string) {
@@ -56,6 +66,7 @@ describe('SnippetsPanel', () => {
     ])
     clipflowMock.deleteSnippet.mockResolvedValue([])
     clipflowMock.copySnippet.mockResolvedValue(undefined)
+    clipflowMock.uploadSnippet.mockResolvedValue({ ok: true, items: [linkedSnippet] })
     vi.stubGlobal('confirm', vi.fn(() => true))
   })
 
@@ -130,5 +141,99 @@ describe('SnippetsPanel', () => {
 
     resolveSave?.([initialSnippet])
     await flushPromises()
+  })
+
+  it('uploads only a saved snippet, then manually updates the same association after editing', async () => {
+    const dirty = { ...linkedSnippet, title: 'Changed title', content: 'Changed body' }
+    clipflowMock.updateSnippet.mockResolvedValueOnce([dirty])
+    clipflowMock.uploadSnippet.mockResolvedValueOnce({ ok: true, items: [linkedSnippet] })
+      .mockResolvedValueOnce({ ok: true, items: [
+        { ...dirty, cloud: {
+          ...linkedSnippet.cloud,
+          uploadedTitle: dirty.title,
+          uploadedContent: dirty.content
+        } }
+      ] })
+    const wrapper = mount(SnippetsPanel)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('未上云')
+    await findButton(wrapper, '上云').trigger('click')
+    await flushPromises()
+    expect(clipflowMock.uploadSnippet).toHaveBeenCalledExactlyOnceWith('snippet-1')
+    expect(wrapper.text()).toContain('已上云')
+    expect(findButton(wrapper, '更新到云端').attributes('disabled')).toBeDefined()
+
+    await findButton(wrapper, 'Edit').trigger('click')
+    await wrapper.get('input[type="text"]').setValue(dirty.title)
+    await wrapper.get('textarea').setValue(dirty.content)
+    await wrapper.get('form').trigger('submit.prevent')
+    await flushPromises()
+    expect(wrapper.text()).toContain('有未上传修改')
+    expect(wrapper.text()).not.toContain('已保存到后端')
+    expect(clipflowMock.uploadSnippet).toHaveBeenCalledTimes(1)
+
+    await findButton(wrapper, '更新到云端').trigger('click')
+    await flushPromises()
+    expect(clipflowMock.uploadSnippet).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).toContain('已保存到后端')
+    expect(wrapper.text()).toContain('已上云')
+  })
+
+  it('shows a persisted uncertain creation and keeps its error after a failed retry', async () => {
+    const pending = { ...initialSnippet, pendingCreate: {
+      requestKey: 'request-1', title: initialSnippet.title, content: initialSnippet.content
+    } }
+    clipflowMock.getSnippets.mockResolvedValue([pending])
+    clipflowMock.uploadSnippet.mockResolvedValueOnce({
+      ok: false, items: [pending], message: '请求超时，结果未确认，请手动重试'
+    })
+    const wrapper = mount(SnippetsPanel)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('上次创建结果未确认')
+    await findButton(wrapper, '上云').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('请求超时，结果未确认')
+    expect(wrapper.text()).toContain('Daily update')
+  })
+
+  it('locks the target edit form and deletion during an upload', async () => {
+    let resolveUpload: ((value: { ok: true; items: typeof linkedSnippet[] }) => void) | undefined
+    clipflowMock.uploadSnippet.mockReturnValue(new Promise((resolve) => { resolveUpload = resolve }))
+    const wrapper = mount(SnippetsPanel)
+    await flushPromises()
+
+    await findButton(wrapper, 'Edit').trigger('click')
+    await wrapper.get('input[type="text"]').setValue('Unsaved draft')
+    await findButton(wrapper, '上云').trigger('click')
+    expect(wrapper.get('input[type="text"]').attributes('disabled')).toBeDefined()
+    expect(findButton(wrapper, 'Delete').attributes('disabled')).toBeDefined()
+    expect(findButton(wrapper, '上云中…').attributes('disabled')).toBeDefined()
+    expect(clipflowMock.uploadSnippet).toHaveBeenCalledExactlyOnceWith('snippet-1')
+
+    resolveUpload?.({ ok: true, items: [linkedSnippet] })
+    await flushPromises()
+    expect(wrapper.get('input[type="text"]').element.value).toBe('Unsaved draft')
+    expect(wrapper.text()).toContain('已上云')
+  })
+
+  it('restores uploaded status when local content returns to the last uploaded snapshot', async () => {
+    clipflowMock.getSnippets.mockResolvedValue([{
+      ...linkedSnippet, content: 'Temporary change'
+    }])
+    clipflowMock.updateSnippet.mockResolvedValueOnce([linkedSnippet])
+    const wrapper = mount(SnippetsPanel)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('有未上传修改')
+    await findButton(wrapper, 'Edit').trigger('click')
+    await wrapper.get('textarea').setValue(linkedSnippet.content)
+    await wrapper.get('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('已上云')
+    expect(findButton(wrapper, '更新到云端').attributes('disabled')).toBeDefined()
+    expect(clipflowMock.uploadSnippet).not.toHaveBeenCalled()
   })
 })

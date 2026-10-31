@@ -10,6 +10,8 @@ const snippets = ref<SnippetItem[]>([])
 const isLoading = ref(true)
 const isSaving = ref(false)
 const isActionPending = ref(false)
+const uploadingId = ref<string | null>(null)
+const uploadFeedback = ref<Record<string, { message: string; error: boolean }>>({})
 const isFormOpen = ref(false)
 const formMode = ref<FormMode>('create')
 const editingId = ref<string | null>(null)
@@ -32,6 +34,22 @@ const filteredSnippets = computed(() => {
     return item.title.toLowerCase().includes(search) || item.content.toLowerCase().includes(search)
   })
 })
+
+function cloudStatus(item: SnippetItem): string {
+  if (!item.cloud) {
+    return '未上云'
+  }
+  return item.title.trim() === item.cloud.uploadedTitle && item.content === item.cloud.uploadedContent
+    ? '已上云'
+    : '有未上传修改'
+}
+
+function uploadLabel(item: SnippetItem): string {
+  if (uploadingId.value === item.id) {
+    return item.cloud ? '更新中…' : '上云中…'
+  }
+  return item.cloud ? '更新到云端' : '上云'
+}
 
 function resetForm(): void {
   formMode.value = 'create'
@@ -87,6 +105,9 @@ function closeForm(): void {
 }
 
 async function handleSave(): Promise<void> {
+  if (isSaving.value || (formMode.value === 'edit' && uploadingId.value === editingId.value)) {
+    return
+  }
   if (!title.value.trim() || !content.value.trim()) {
     formError.value = '标题和内容不能为空'
     return
@@ -101,6 +122,9 @@ async function handleSave(): Promise<void> {
       formMode.value === 'create'
         ? await window.clipflow.createSnippet(draft)
         : await window.clipflow.updateSnippet(editingId.value as string, draft)
+    if (editingId.value) {
+      delete uploadFeedback.value[editingId.value]
+    }
     closeForm()
   } catch (error) {
     formError.value = error instanceof Error ? error.message : '保存片段失败，请重试'
@@ -110,7 +134,14 @@ async function handleSave(): Promise<void> {
 }
 
 async function handleDelete(item: SnippetItem): Promise<void> {
-  if (!window.confirm(`确认删除“${item.title}”吗？此操作无法撤销。`)) {
+  if (uploadingId.value === item.id) {
+    return
+  }
+
+  const warning = item.pendingCreate
+    ? '后端可能已保存；删除本地片段不会撤回该请求。'
+    : item.cloud ? '后端记录会保留。' : ''
+  if (!window.confirm(`确认删除“${item.title}”吗？此操作无法撤销。${warning}`)) {
     return
   }
 
@@ -122,6 +153,35 @@ async function handleDelete(item: SnippetItem): Promise<void> {
     showFeedback('删除片段失败，请重试', 'error')
   } finally {
     isActionPending.value = false
+  }
+}
+
+async function handleUpload(item: SnippetItem): Promise<void> {
+  if (uploadingId.value || cloudStatus(item) === '已上云') {
+    return
+  }
+
+  uploadingId.value = item.id
+  delete uploadFeedback.value[item.id]
+
+  try {
+    const result = await window.clipflow.uploadSnippet(item.id)
+    snippets.value = result.items
+    uploadFeedback.value[item.id] = result.ok
+      ? { message: '已保存到后端', error: false }
+      : { message: result.message, error: true }
+  } catch {
+    uploadFeedback.value[item.id] = {
+      message: '上云请求未完成，请手动重试',
+      error: true
+    }
+    try {
+      snippets.value = await window.clipflow.getSnippets()
+    } catch {
+      // Keep the upload error visible if refreshing the local state also fails.
+    }
+  } finally {
+    uploadingId.value = null
   }
 }
 
@@ -154,7 +214,7 @@ onUnmounted(() => {
     <div class="panel__header">
       <div>
         <h3>Snippets</h3>
-        <p>保存、查找并复制可复用的文本片段。</p>
+        <p>保存、查找并复制可复用的文本片段。上云会保存到当前连接的后端服务。</p>
       </div>
       <button class="primary-button" :disabled="isSaving || isActionPending" type="button" @click="openCreateForm">
         New Snippet
@@ -168,15 +228,15 @@ onUnmounted(() => {
       <form class="snippet-form" @submit.prevent="handleSave">
         <label class="form-field">
           <span>Title</span>
-          <input v-model="title" class="text-input" type="text" :disabled="isSaving" />
+          <input v-model="title" class="text-input" type="text" :disabled="isSaving || (formMode === 'edit' && uploadingId === editingId)" />
         </label>
         <label class="form-field">
           <span>Content</span>
-          <textarea v-model="content" class="editor editor--snippet" :disabled="isSaving" spellcheck="false" />
+          <textarea v-model="content" class="editor editor--snippet" :disabled="isSaving || (formMode === 'edit' && uploadingId === editingId)" spellcheck="false" />
         </label>
         <p v-if="formError" class="error-text">{{ formError }}</p>
         <div class="record-item__actions">
-          <button class="primary-button" :disabled="isSaving" type="submit">
+          <button class="primary-button" :disabled="isSaving || (formMode === 'edit' && uploadingId === editingId)" type="submit">
             {{ isSaving ? 'Saving...' : 'Save' }}
           </button>
           <button class="ghost-button" :disabled="isSaving" type="button" @click="closeForm">Cancel</button>
@@ -215,17 +275,33 @@ onUnmounted(() => {
             <span>{{ item.updatedAt }}</span>
           </div>
           <pre class="snippet-item__content">{{ item.content }}</pre>
+          <span class="snippet-item__cloud-status">{{ cloudStatus(item) }}</span>
           <div class="record-item__actions">
+            <button
+              class="ghost-button"
+              :disabled="isActionPending || isSaving || !!uploadingId || cloudStatus(item) === '已上云'"
+              type="button"
+              @click="handleUpload(item)"
+            >
+              {{ uploadLabel(item) }}
+            </button>
             <button class="ghost-button" :disabled="isActionPending || isSaving" type="button" @click="handleCopy(item)">
               Copy
             </button>
-            <button class="ghost-button" :disabled="isActionPending || isSaving" type="button" @click="openEditForm(item)">
+            <button class="ghost-button" :disabled="isActionPending || isSaving || uploadingId === item.id" type="button" @click="openEditForm(item)">
               Edit
             </button>
-            <button class="ghost-button" :disabled="isActionPending || isSaving" type="button" @click="handleDelete(item)">
+            <button class="ghost-button" :disabled="isActionPending || isSaving || uploadingId === item.id" type="button" @click="handleDelete(item)">
               Delete
             </button>
           </div>
+          <p
+            v-if="uploadFeedback[item.id] || item.pendingCreate"
+            :class="['snippet-item__upload-feedback', { 'snippet-item__upload-feedback--error': uploadFeedback[item.id]?.error || !uploadFeedback[item.id] }]"
+            :role="uploadFeedback[item.id]?.error ? 'alert' : 'status'"
+          >
+            {{ uploadFeedback[item.id]?.message || '上次创建结果未确认，请手动重试' }}
+          </p>
         </article>
       </div>
       <div v-else class="empty-state">{{ keyword ? 'No matched snippets' : 'No saved snippets yet' }}</div>
