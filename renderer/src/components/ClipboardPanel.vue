@@ -6,10 +6,73 @@ import type { ClipboardHistorySnapshot, ClipboardItem } from '@shared/types/doma
 const items = ref<ClipboardItem[]>([])
 const isLoading = ref(true)
 const isActionPending = ref(false)
+const isSaving = ref(false)
+const isSaveFormOpen = ref(false)
+const saveTitle = ref('')
+const saveContent = ref('')
+const saveError = ref('')
+const saveFeedback = ref('')
 const pollingInterval = ref(1000)
 
 const pinnedItems = computed(() => items.value.filter((item) => item.pinned))
 const normalItems = computed(() => items.value.filter((item) => !item.pinned))
+
+let feedbackTimer: ReturnType<typeof setTimeout> | undefined
+
+function openSaveForm(item: ClipboardItem): void {
+  if (isSaving.value) {
+    return
+  }
+
+  saveTitle.value = ''
+  saveContent.value = item.content
+  saveError.value = ''
+  saveFeedback.value = ''
+  isSaveFormOpen.value = true
+}
+
+function closeSaveForm(): void {
+  if (isSaving.value) {
+    return
+  }
+
+  isSaveFormOpen.value = false
+  saveTitle.value = ''
+  saveContent.value = ''
+  saveError.value = ''
+}
+
+async function handleSaveAsSnippet(): Promise<void> {
+  if (isSaving.value || !isSaveFormOpen.value) {
+    return
+  }
+
+  if (!saveTitle.value.trim() || !saveContent.value.trim()) {
+    saveError.value = '标题和内容不能为空'
+    return
+  }
+
+  isSaving.value = true
+  saveError.value = ''
+
+  try {
+    await window.clipflow.createSnippet({ title: saveTitle.value, content: saveContent.value })
+    isSaving.value = false
+    closeSaveForm()
+    saveFeedback.value = '已保存到 Snippets'
+    if (feedbackTimer) {
+      clearTimeout(feedbackTimer)
+    }
+    feedbackTimer = setTimeout(() => {
+      saveFeedback.value = ''
+      feedbackTimer = undefined
+    }, 2400)
+  } catch (error) {
+    saveError.value = error instanceof Error ? error.message : '保存片段失败，请重试'
+  } finally {
+    isSaving.value = false
+  }
+}
 
 function applySnapshot(snapshot: ClipboardHistorySnapshot): void {
   items.value = snapshot.items
@@ -88,6 +151,9 @@ onMounted(async () => {
 onUnmounted(() => {
   unsubscribe?.()
   unsubscribe = undefined
+  if (feedbackTimer) {
+    clearTimeout(feedbackTimer)
+  }
 })
 </script>
 
@@ -108,6 +174,31 @@ onUnmounted(() => {
       </button>
     </div>
 
+    <section v-if="isSaveFormOpen" class="section-card">
+      <div class="section-card__title">
+        <span>另存为 Snippet</span>
+      </div>
+      <form class="snippet-form" @submit.prevent="handleSaveAsSnippet">
+        <label class="form-field">
+          <span>Title</span>
+          <input v-model="saveTitle" class="text-input" type="text" :disabled="isSaving" />
+        </label>
+        <label class="form-field">
+          <span>Content</span>
+          <textarea v-model="saveContent" class="editor editor--snippet" :disabled="isSaving" spellcheck="false" />
+        </label>
+        <p v-if="saveError" class="error-text" role="alert">{{ saveError }}</p>
+        <div class="record-item__actions">
+          <button class="primary-button" :disabled="isSaving" type="submit">
+            {{ isSaving ? 'Saving...' : 'Save' }}
+          </button>
+          <button class="ghost-button" :disabled="isSaving" type="button" @click="closeSaveForm">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <p v-if="saveFeedback" class="transform-feedback" role="status">{{ saveFeedback }}</p>
+
     <div class="section-card">
       <div class="section-card__title">
         <span>Pinned</span>
@@ -122,6 +213,9 @@ onUnmounted(() => {
             <div class="record-item__actions">
               <button class="ghost-button" :disabled="isActionPending" type="button" @click="handleCopy(item.id)">
                 Copy
+              </button>
+              <button class="ghost-button" :disabled="isActionPending || isSaving" type="button" @click="openSaveForm(item)">
+                另存为 Snippet
               </button>
               <button
                 class="ghost-button"
@@ -152,6 +246,9 @@ onUnmounted(() => {
             <div class="record-item__actions">
               <button class="ghost-button" :disabled="isActionPending" type="button" @click="handleCopy(item.id)">
                 Copy
+              </button>
+              <button class="ghost-button" :disabled="isActionPending || isSaving" type="button" @click="openSaveForm(item)">
+                另存为 Snippet
               </button>
               <button
                 class="ghost-button"
