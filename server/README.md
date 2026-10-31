@@ -8,7 +8,7 @@
 - Docker Desktop（含 Compose）或 Docker Engine + Compose 插件
 - 不需要全局 Maven，使用 `./mvnw`（Windows 使用 `mvnw.cmd`）
 
-macOS 若终端里的 `docker compose` 不可用，但 Docker Desktop 已安装，可先执行：
+macOS 若终端里的 `docker compose` 不可用，但 Docker Desktop 已安装，先启动 Docker Desktop 并等待引擎启动完成；本机上 Desktop 未运行时，终端可能连 Compose 插件也无法发现。随后执行：
 
 ```sh
 export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
